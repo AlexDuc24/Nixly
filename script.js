@@ -7,11 +7,12 @@ const trimBtn = document.getElementById('trim-btn');
 const effectsBtn = document.getElementById('effects-btn');
 const status = document.getElementById('status');
 
-// FFmpeg Setup
+// FFmpeg Setup (Single-Threaded)
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ 
     log: true,
-    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' // Reliable CDN
+    mainName: 'main', // Explicitly use single-threaded main
+    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js' // Single-threaded core
 });
 
 let currentFile = null;
@@ -21,7 +22,7 @@ async function loadFFmpeg() {
     status.textContent = 'Initializing AI Video Editor...';
     try {
         if (!ffmpeg.isLoaded()) {
-            console.log('Starting FFmpeg load...');
+            console.log('Starting FFmpeg load (single-threaded)...');
             await ffmpeg.load();
             console.log('FFmpeg loaded successfully!');
         }
