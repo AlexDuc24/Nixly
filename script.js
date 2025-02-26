@@ -10,20 +10,24 @@ const status = document.getElementById('status');
 // FFmpeg Setup
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ 
-    log: true, // Logs FFmpeg output in console for debugging
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' // Ensures compatibility
+    log: true,
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' // Reliable CDN
 });
 
 let currentFile = null;
 
-// Load FFmpeg on page load
+// Load FFmpeg with detailed feedback
 async function loadFFmpeg() {
     status.textContent = 'Initializing AI Video Editor...';
     try {
-        if (!ffmpeg.isLoaded()) await ffmpeg.load();
+        if (!ffmpeg.isLoaded()) {
+            console.log('Starting FFmpeg load...');
+            await ffmpeg.load();
+            console.log('FFmpeg loaded successfully!');
+        }
         status.textContent = 'Ready! Upload a video to begin.';
     } catch (error) {
-        status.textContent = 'Error loading editor. Please refresh.';
+        status.textContent = `Error: ${error.message}. Refresh or check console.`;
         console.error('FFmpeg load failed:', error);
     }
 }
@@ -61,23 +65,18 @@ function handleFile(file) {
 // Enhance: Boost brightness and contrast
 enhanceBtn.addEventListener('click', async () => {
     if (!currentFile) return;
-    status.textContent = 'Enhancing video with AI...';
+    status.textContent = 'Enhancing video...';
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-vf', 'eq=brightness=0.15:contrast=1.2', // Brighten and sharpen
-            '-c:a', 'copy', // Keep audio intact
-            'output.mp4'
-        );
+        await ffmpeg.run('-i', 'input.mp4', '-vf', 'eq=brightness=0.15:contrast=1.2', '-c:a', 'copy', 'output.mp4');
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'enhanced.mp4', { type: 'video/mp4' });
-        status.textContent = 'Video enhanced successfully!';
+        status.textContent = 'Video enhanced!';
     } catch (error) {
-        status.textContent = 'Enhance failed. Try a smaller video.';
+        status.textContent = 'Enhance failed.';
         console.error('Enhance error:', error);
     }
 });
@@ -89,45 +88,33 @@ trimBtn.addEventListener('click', async () => {
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-ss', '5', // Start at 5 seconds
-            '-t', '10', // Duration of 10 seconds
-            '-c:v', 'copy', // Fast video copy
-            '-c:a', 'copy', // Fast audio copy
-            'output.mp4'
-        );
+        await ffmpeg.run('-i', 'input.mp4', '-ss', '5', '-t', '10', '-c:v', 'copy', '-c:a', 'copy', 'output.mp4');
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'trimmed.mp4', { type: 'video/mp4' });
-        status.textContent = 'Video trimmed successfully!';
+        status.textContent = 'Video trimmed!';
     } catch (error) {
-        status.textContent = 'Trim failed. Check video format.';
+        status.textContent = 'Trim failed.';
         console.error('Trim error:', error);
     }
 });
 
-// Effects: Apply a vintage sepia filter
+// Effects: Apply sepia filter
 effectsBtn.addEventListener('click', async () => {
     if (!currentFile) return;
-    status.textContent = 'Adding AI effects...';
+    status.textContent = 'Adding effects...';
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', // Sepia filter
-            '-c:a', 'copy',
-            'output.mp4'
-        );
+        await ffmpeg.run('-i', 'input.mp4', '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', '-c:a', 'copy', 'output.mp4');
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'effect.mp4', { type: 'video/mp4' });
-        status.textContent = 'Effects added successfully!';
+        status.textContent = 'Effects added!';
     } catch (error) {
-        status.textContent = 'Effects failed. Try again.';
+        status.textContent = 'Effects failed.';
         console.error('Effects error:', error);
     }
 });
