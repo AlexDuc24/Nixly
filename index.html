@@ -1,1 +1,22 @@
-<html><body><h1>Welcome to Nixly - Edit Videos with AI</h1></body></html> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nixly - AI Video Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Nixly - Edit Videos with AI</h1>
+    <div id="drop-zone" class="drop-zone">
+        <p>Drag and drop your video here or click to upload</p>
+        <input type="file" id="video-upload" accept="video/*" hidden>
+    </div>
+    <video id="video-preview" controls width="600"></video>
+    <div class="edit-buttons">
+        <button id="enhance-btn">Enhance</button>
+        <button id="trim-btn">Trim</button>
+        <button id="effects-btn">Add Effects</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
