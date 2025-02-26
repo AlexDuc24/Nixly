@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Nixly - AI Video Editor</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Load ffmpeg.wasm -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
     <h1>Nixly - Edit Videos with AI</h1>
@@ -11,12 +13,13 @@
         <p>Drag and drop your video here or click to upload</p>
         <input type="file" id="video-upload" accept="video/*" hidden>
     </div>
-    <video id="video-preview" controls width="600"></video>
+    <video id="video-preview" controls width="600" style="display: none;"></video>
     <div class="edit-buttons">
-        <button id="enhance-btn">Enhance</button>
-        <button id="trim-btn">Trim</button>
-        <button id="effects-btn">Add Effects</button>
+        <button id="enhance-btn" disabled>Enhance</button>
+        <button id="trim-btn" disabled>Trim</button>
+        <button id="effects-btn" disabled>Add Effects</button>
     </div>
+    <p id="status" style="color: #555;">Upload a video to start editing</p>
     <script src="script.js"></script>
 </body>
 </html>
