@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+}
+.drop-zone {
+    width: 400px;
+    height: 200px;
+    border: 2px dashed #ccc;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.drop-zone.dragover {
+    background-color: #e0e0e0;
+}
+.edit-buttons {
+    margin-top: 20px;
+}
+button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #0056b3;
+}
