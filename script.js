@@ -11,13 +11,13 @@ const status = document.getElementById('status');
 const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ 
     log: true,
-    mainName: 'main', // Explicitly use single-threaded main
-    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js' // Single-threaded core
+    mainName: 'main',
+    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js'
 });
 
 let currentFile = null;
 
-// Load FFmpeg with detailed feedback
+// Load FFmpeg
 async function loadFFmpeg() {
     status.textContent = 'Initializing AI Video Editor...';
     try {
@@ -50,6 +50,11 @@ videoUpload.addEventListener('change', () => handleFile(videoUpload.files[0]));
 
 function handleFile(file) {
     if (file && file.type.startsWith('video/')) {
+        // Check file size (limit to 50MB to avoid crashes)
+        if (file.size > 50 * 1024 * 1024) {
+            status.textContent = 'File too large (>50MB). Please upload a smaller video.';
+            return;
+        }
         currentFile = file;
         const url = URL.createObjectURL(file);
         videoPreview.src = url;
@@ -70,52 +75,73 @@ enhanceBtn.addEventListener('click', async () => {
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run('-i', 'input.mp4', '-vf', 'eq=brightness=0.15:contrast=1.2', '-c:a', 'copy', 'output.mp4');
+        await ffmpeg.run(
+            '-i', 'input.mp4',
+            '-vf', 'eq=brightness=0.15:contrast=1.2',
+            '-c:a', 'copy', // Avoid re-encoding audio
+            '-preset', 'ultrafast', // Speed up processing
+            'output.mp4'
+        );
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'enhanced.mp4', { type: 'video/mp4' });
         status.textContent = 'Video enhanced!';
     } catch (error) {
-        status.textContent = 'Enhance failed.';
+        status.textContent = 'Enhance failed. Try a smaller video.';
         console.error('Enhance error:', error);
     }
 });
 
-// Trim: Cut to 10 seconds from 5-second mark
+// Trim: Cut exactly 10 seconds from 5-second mark
 trimBtn.addEventListener('click', async () => {
     if (!currentFile) return;
     status.textContent = 'Trimming video...';
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run('-i', 'input.mp4', '-ss', '5', '-t', '10', '-c:v', 'copy', '-c:a', 'copy', 'output.mp4');
+        await ffmpeg.run(
+            '-i', 'input.mp4',
+            '-ss', '5', // Start at 5 seconds
+            '-t', '10', // Exactly 10 seconds
+            '-avoid_negative_ts', '1', // Fix timing issues
+            '-c:v', 'libx264', // Re-encode video for accuracy
+            '-c:a', 'copy', // Keep audio fast
+            '-preset', 'ultrafast', // Speed up
+            'output.mp4'
+        );
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'trimmed.mp4', { type: 'video/mp4' });
-        status.textContent = 'Video trimmed!';
+        status.textContent = 'Video trimmed to 10 seconds!';
     } catch (error) {
-        status.textContent = 'Trim failed.';
+        status.textContent = 'Trim failed. Check video length.';
         console.error('Trim error:', error);
     }
 });
 
-// Effects: Apply sepia filter
+// Effects: Simplified grayscale filter (less resource-intensive)
 effectsBtn.addEventListener('click', async () => {
     if (!currentFile) return;
     status.textContent = 'Adding effects...';
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run('-i', 'input.mp4', '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', '-c:a', 'copy', 'output.mp4');
+        await ffmpeg.run(
+            '-i', 'input.mp4',
+            '-vf', 'hue=s=0', // Grayscale instead of sepia
+            '-c:a', 'copy',
+            '-preset', 'ultrafast',
+            'output.mp4'
+        );
         const data = ffmpeg.FS('readFile', 'output.mp4');
         const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
         videoPreview.src = url;
         currentFile = new File([data.buffer], 'effect.mp4', { type: 'video/mp4' });
-        status.textContent = 'Effects added!';
+        status.textContent = 'Grayscale effect added!';
     } catch (error) {
-        status.textContent = 'Effects failed.';
+        status.textContent = 'Effects failed. Try a smaller video.';
         console.error('Effects error:', error);
     }
 });
