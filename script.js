@@ -71,18 +71,25 @@ function handleFile(file) {
     }
 }
 
+// Helper: Force UI update before processing
+function forceUIUpdate(message) {
+    status.textContent = message;
+    status.classList.add('processing');
+    return new Promise(resolve => setTimeout(resolve, 100)); // Brief delay to render
+}
+
 // Helper: Process video with progress updates and download
 async function processVideo(command, outputName, successMessage) {
     if (!currentFile) return;
-    // Warn user about potential freeze
-    status.textContent = 'Processing may take 10-20 seconds. Please wait...';
-    status.classList.add('processing');
+    console.log('Starting video processing...');
+    await forceUIUpdate('Processing may take up to 15 seconds. Please wait...');
     enhanceBtn.disabled = true;
     trimBtn.disabled = true;
     effectsBtn.disabled = true;
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
+        console.log('Running FFmpeg command:', command);
         await ffmpeg.run(...command);
         const data = ffmpeg.FS('readFile', 'output.mp4');
         processedVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
@@ -96,6 +103,7 @@ async function processVideo(command, outputName, successMessage) {
             a.download = outputName;
             a.click();
         };
+        console.log('Processing complete!');
     } catch (error) {
         status.textContent = 'Processing failed. Try a smaller or shorter video.';
         console.error('Processing error:', error);
@@ -110,7 +118,7 @@ async function processVideo(command, outputName, successMessage) {
 // Enhance: Boost brightness and contrast
 enhanceBtn.addEventListener('click', () => {
     processVideo(
-        ['-i', 'input.mp4', '-vf', 'eq=brightness=0.1:contrast=1.1,scale=480:270', '-c:a', 'copy', '-preset', 'ultrafast', '-crf', '28', 'output.mp4'],
+        ['-i', 'input.mp4', '-vf', 'eq=brightness=0.1:contrast=1.1,scale=320:180', '-c:a', 'copy', '-preset', 'superfast', '-crf', '30', 'output.mp4'],
         'enhanced-video.mp4',
         'Video enhanced!'
     );
@@ -119,7 +127,7 @@ enhanceBtn.addEventListener('click', () => {
 // Trim: Cut exactly 10 seconds from 5-second mark
 trimBtn.addEventListener('click', () => {
     processVideo(
-        ['-i', 'input.mp4', '-ss', '5', '-t', '10', '-avoid_negative_ts', '1', '-c:v', 'libx264', '-c:a', 'copy', '-preset', 'ultrafast', '-crf', '28', 'output.mp4'],
+        ['-i', 'input.mp4', '-ss', '5', '-t', '10', '-avoid_negative_ts', '1', '-c:v', 'libx264', '-c:a', 'copy', '-preset', 'superfast', '-crf', '30', 'output.mp4'],
         'trimmed-video.mp4',
         'Video trimmed to 10 seconds!'
     );
@@ -128,7 +136,7 @@ trimBtn.addEventListener('click', () => {
 // Effects: Grayscale filter
 effectsBtn.addEventListener('click', () => {
     processVideo(
-        ['-i', 'input.mp4', '-vf', 'hue=s=0,scale=480:270', '-c:a', 'copy', '-preset', 'ultrafast', '-crf', '28', 'output.mp4'],
+        ['-i', 'input.mp4', '-vf', 'hue=s=0,scale=320:180', '-c:a', 'copy', '-preset', 'superfast', '-crf', '30', 'output.mp4'],
         'grayscale-video.mp4',
         'Grayscale effect added!'
     );
