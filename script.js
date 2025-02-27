@@ -5,6 +5,7 @@ const videoPreview = document.getElementById('video-preview');
 const enhanceBtn = document.getElementById('enhance-btn');
 const trimBtn = document.getElementById('trim-btn');
 const effectsBtn = document.getElementById('effects-btn');
+const downloadBtn = document.getElementById('download-btn');
 const status = document.getElementById('status');
 
 // FFmpeg Setup (Single-Threaded)
@@ -16,6 +17,7 @@ const ffmpeg = createFFmpeg({
 });
 
 let currentFile = null;
+let processedVideoUrl = null;
 
 // Load FFmpeg
 async function loadFFmpeg() {
@@ -50,15 +52,16 @@ videoUpload.addEventListener('change', () => handleFile(videoUpload.files[0]));
 
 function handleFile(file) {
     if (file && file.type.startsWith('video/')) {
-        // Check file size (limit to 50MB to avoid crashes)
-        if (file.size > 50 * 1024 * 1024) {
-            status.textContent = 'File too large (>50MB). Please upload a smaller video.';
+        if (file.size > 20 * 1024 * 1024) {
+            status.textContent = 'File too large (>20MB). Please upload a smaller video.';
             return;
         }
         currentFile = file;
         const url = URL.createObjectURL(file);
         videoPreview.src = url;
         videoPreview.style.display = 'block';
+        downloadBtn.style.display = 'none'; // Hide download until processed
+        processedVideoUrl = null;
         status.textContent = 'Video loaded! Select an AI edit.';
         enhanceBtn.disabled = false;
         trimBtn.disabled = false;
@@ -68,80 +71,64 @@ function handleFile(file) {
     }
 }
 
-// Enhance: Boost brightness and contrast
-enhanceBtn.addEventListener('click', async () => {
+// Helper: Process video with progress updates and download
+async function processVideo(command, outputName, successMessage) {
     if (!currentFile) return;
-    status.textContent = 'Enhancing video...';
+    status.textContent = 'Processing...';
+    status.classList.add('processing');
+    enhanceBtn.disabled = true;
+    trimBtn.disabled = true;
+    effectsBtn.disabled = true;
     try {
         await loadFFmpeg();
         ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-vf', 'eq=brightness=0.15:contrast=1.2',
-            '-c:a', 'copy', // Avoid re-encoding audio
-            '-preset', 'ultrafast', // Speed up processing
-            'output.mp4'
-        );
+        await ffmpeg.run(...command);
         const data = ffmpeg.FS('readFile', 'output.mp4');
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        videoPreview.src = url;
-        currentFile = new File([data.buffer], 'enhanced.mp4', { type: 'video/mp4' });
-        status.textContent = 'Video enhanced!';
+        processedVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        videoPreview.src = processedVideoUrl;
+        currentFile = new File([data.buffer], outputName, { type: 'video/mp4' });
+        status.textContent = successMessage;
+        downloadBtn.style.display = 'block'; // Show download button
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = processedVideoUrl;
+            a.download = outputName;
+            a.click();
+        };
     } catch (error) {
-        status.textContent = 'Enhance failed. Try a smaller video.';
-        console.error('Enhance error:', error);
+        status.textContent = 'Processing failed. Try a smaller or shorter video.';
+        console.error('Processing error:', error);
+    } finally {
+        status.classList.remove('processing');
+        enhanceBtn.disabled = false;
+        trimBtn.disabled = false;
+        effectsBtn.disabled = false;
     }
+}
+
+// Enhance: Boost brightness and contrast
+enhanceBtn.addEventListener('click', () => {
+    processVideo(
+        ['-i', 'input.mp4', '-vf', 'eq=brightness=0.1:contrast=1.1,scale=640:360', '-c:a', 'copy', '-preset', 'ultrafast', 'output.mp4'],
+        'enhanced-video.mp4',
+        'Video enhanced!'
+    );
 });
 
 // Trim: Cut exactly 10 seconds from 5-second mark
-trimBtn.addEventListener('click', async () => {
-    if (!currentFile) return;
-    status.textContent = 'Trimming video...';
-    try {
-        await loadFFmpeg();
-        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-ss', '5', // Start at 5 seconds
-            '-t', '10', // Exactly 10 seconds
-            '-avoid_negative_ts', '1', // Fix timing issues
-            '-c:v', 'libx264', // Re-encode video for accuracy
-            '-c:a', 'copy', // Keep audio fast
-            '-preset', 'ultrafast', // Speed up
-            'output.mp4'
-        );
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        videoPreview.src = url;
-        currentFile = new File([data.buffer], 'trimmed.mp4', { type: 'video/mp4' });
-        status.textContent = 'Video trimmed to 10 seconds!';
-    } catch (error) {
-        status.textContent = 'Trim failed. Check video length.';
-        console.error('Trim error:', error);
-    }
+trimBtn.addEventListener('click', () => {
+    processVideo(
+        ['-i', 'input.mp4', '-ss', '5', '-t', '10', '-avoid_negative_ts', '1', '-c:v', 'libx264', '-c:a', 'copy', '-preset', 'ultrafast', 'output.mp4'],
+        'trimmed-video.mp4',
+        'Video trimmed to 10 seconds!'
+    );
 });
 
-// Effects: Simplified grayscale filter (less resource-intensive)
-effectsBtn.addEventListener('click', async () => {
-    if (!currentFile) return;
-    status.textContent = 'Adding effects...';
-    try {
-        await loadFFmpeg();
-        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-        await ffmpeg.run(
-            '-i', 'input.mp4',
-            '-vf', 'hue=s=0', // Grayscale instead of sepia
-            '-c:a', 'copy',
-            '-preset', 'ultrafast',
-            'output.mp4'
-        );
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        videoPreview.src = url;
-        currentFile = new File([data.buffer], 'effect.mp4', { type: 'video/mp4' });
-        status.textContent = 'Grayscale effect added!';
-    } catch (error) {
-        status.textContent = 'Effects failed. Try a smaller video.';
-        console.error('Effects error:', error);
-    }
+// Effects: Grayscale filter
+effectsBtn.addEventListener('click', () => {
+    processVideo(
+        ['-i', 'input.mp4', '-vf', 'hue=s=0,scale=640:360', '-c:a', 'copy', '-preset', 'ultrafast', 'output.mp4'],
+        'grayscale-video.mp4',
+        'Grayscale effect added!'
+    );
 });
