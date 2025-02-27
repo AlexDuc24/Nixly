@@ -81,8 +81,10 @@ function forceUIUpdate(message) {
 // Helper: Process video with progress updates and download
 async function processVideo(command, outputName, successMessage) {
     if (!currentFile) return;
+    status.textContent = 'Processing may take up to 15 seconds. Please wait...';
+    status.classList.add('processing');
+    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay for UI render
     console.log('Starting video processing...');
-    await forceUIUpdate('Processing may take up to 15 seconds. Please wait...');
     enhanceBtn.disabled = true;
     trimBtn.disabled = true;
     effectsBtn.disabled = true;
