@@ -3,30 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nixly - AI Video Editor</title>
+    <title>Nixly - AI Tools</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
     <header>
         <h1>Nixly</h1>
-        <p>Transform Your Videos with AI Magic</p>
+        <p>Your Creative AI Playground</p>
     </header>
     <main>
-        <section class="editor-container">
-            <div id="drop-zone" class="drop-zone">
-                <p>Drag & Drop Your Video Here<br>or Click to Upload</p>
-                <input type="file" id="video-upload" accept="video/*" hidden>
+        <section class="tools-container">
+            <!-- Image Generator -->
+            <div class="tool">
+                <h2>Image Generator</h2>
+                <input id="image-prompt" placeholder="e.g., Neon cat in space">
+                <button id="generate-image">Generate</button>
+                <img id="generated-image" style="display: none; max-width: 100%;">
             </div>
-            <video id="video-preview" controls preload="metadata" style="display: none;"></video>
-            <div class="edit-controls">
-                <button id="enhance-btn" class="edit-btn" disabled>Enhance</button>
-                <button id="trim-btn" class="edit-btn" disabled>Trim</button>
-                <button id="effects-btn" class="edit-btn" disabled>Add Effects</button>
+            <!-- Chatbot -->
+            <div class="tool">
+                <h2>Video Idea Buddy</h2>
+                <textarea id="chat-input" placeholder="Ask for a video idea..."></textarea>
+                <button id="chat-btn">Chat</button>
+                <div id="chat-output"></div>
             </div>
-            <button id="download-btn" class="download-btn" style="display: none;">Download Video</button>
-            <p id="status">Upload a video to unleash the AI!</p>
+            <!-- YouTube Downloader -->
+            <div class="tool">
+                <h2>YouTube Downloader</h2>
+                <input id="youtube-url" placeholder="Paste YouTube URL">
+                <button id="download-youtube">Download</button>
+                <p id="download-status"></p>
+            </div>
         </section>
     </main>
     <footer>
